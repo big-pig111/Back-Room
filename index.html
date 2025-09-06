@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberChat | Hacker Chat Room</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- Configure Tailwind custom colors and fonts -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'hacker-green': '#00ff41',
+                        'hacker-dark': '#0d0208',
+                        'hacker-blue': '#00ffff',
+                        'hacker-purple': '#bf00ff',
+                        'hacker-gray': '#161a1d'
+                    },
+                    fontFamily: {
+                        'mono': ['Courier New', 'monospace', 'Consolas']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .text-shadow-green {
+                text-shadow: 0 0 5px #00ff41, 0 0 10px #00ff41;
+            }
+            .text-shadow-blue {
+                text-shadow: 0 0 5px #00ffff, 0 0 10px #00ffff;
+            }
+            .text-shadow-purple {
+                text-shadow: 0 0 5px #bf00ff, 0 0 10px #bf00ff;
+            }
+            .border-glow-green {
+                box-shadow: 0 0 5px #00ff41, 0 0 10px #00ff41;
+            }
+            .bg-grid {
+                background-image: 
+                    linear-gradient(rgba(0, 255, 65, 0.1) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(0, 255, 65, 0.1) 1px, transparent 1px);
+                background-size: 20px 20px;
+            }
+            .scanline {
+                background: linear-gradient(to bottom, 
+                    transparent 50%, 
+                    rgba(0, 255, 65, 0.1) 50%);
+                background-size: 100% 4px;
+                pointer-events: none;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-hacker-dark text-hacker-green font-mono min-h-screen flex flex-col overflow-hidden">
+    <!-- Scanline effect -->
+    <div class="scanline fixed top-0 left-0 w-full h-full z-10 animate-[scan_6s_linear_infinite]"></div>
+    
+    <!-- Grid background -->
+    <div class="bg-grid fixed top-0 left-0 w-full h-full z-0"></div>
+    
+    <!-- Main container -->
+    <div class="relative z-20 flex flex-col h-screen">
+        <!-- Header -->
+        <header class="border-b border-hacker-green/30 p-4 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-terminal text-2xl text-shadow-green"></i>
+                <h1 class="text-xl md:text-2xl font-bold text-shadow-green">CyberChat<span class="text-hacker-blue text-shadow-blue">.exe</span></h1>
+            </div>
+            
+            <div id="user-info" class="hidden md:flex items-center space-x-4">
+                <div class="flex items-center">
+                    <span class="mr-2"><i class="fa fa-user-circle"></i></span>
+                    <span id="username-display" class="text-hacker-blue text-shadow-blue"></span>
+                </div>
+                <button id="logout-btn" class="hover:text-hacker-purple transition-colors duration-300">
+                    <i class="fa fa-sign-out"></i> Logout
+                </button>
+            </div>
+        </header>
+        
+        <!-- Login/Register Modal -->
+        <div id="auth-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-hacker-dark/90">
+            <div class="bg-hacker-gray border border-hacker-green/50 p-6 w-full max-w-md rounded-md">
+                <h2 class="text-center text-xl mb-6 text-shadow-green">Authentication</h2>
+                
+                <div class="mb-4">
+                    <label for="username" class="block mb-2">Username</label>
+                    <input type="text" id="username" 
+                        class="w-full bg-hacker-dark border border-hacker-green/50 p-2 focus:border-hacker-green focus:outline-none focus:border-glow-green transition-all duration-300"
+                        placeholder="Enter your handle">
+                </div>
+                
+                <div class="mb-6">
+                    <label for="room" class="block mb-2">Chat Room</label>
+                    <select id="room" 
+                        class="w-full bg-hacker-dark border border-hacker-green/50 p-2 focus:border-hacker-green focus:outline-none focus:border-glow-green transition-all duration-300">
+                        <option value="main">Main Channel</option>
+                        <option value="security">Security Zone</option>
+                        <option value="development">Development Group</option>
+                        <option value="hidden">Hidden Channel</option>
+                    </select>
+                </div>
+                
+                <button id="enter-btn" class="w-full bg-hacker-green/20 border border-hacker-green text-hacker-green py-2 hover:bg-hacker-green/30 transition-all duration-300 flex justify-center items-center">
+                    <i class="fa fa-sign-in mr-2"></i> Enter Chat Room
+                </button>
+            </div>
+        </div>
+        
+        <!-- Main content area -->
+        <main class="flex-1 flex flex-col md:flex-row overflow-hidden">
+            <!-- Sidebar - User list -->
+            <aside id="user-list-container" class="hidden md:block w-64 border-r border-hacker-green/30 p-4 overflow-y-auto">
+                <h3 class="text-lg mb-4 border-b border-hacker-green/30 pb-2">Online Users</h3>
+                <ul id="user-list" class="space-y-2">
+                    <!-- User list will be dynamically populated by JS -->
+                </ul>
+            </aside>
+            
+            <!-- Chat area -->
+            <div class="flex-1 flex flex-col overflow-hidden">
+                <!-- Message display area -->
+                <div id="messages-container" class="flex-1 p-4 overflow-y-auto space-y-4">
+                    <!-- Welcome message -->
+                    <div class="system-message text-hacker-blue/80 text-sm italic">
+                        <i class="fa fa-info-circle mr-2"></i>Welcome to CyberChat, please follow chat room rules
+                    </div>
+                    
+                    <!-- Messages will be dynamically populated by JS -->
+                </div>
+                <!-- Scroll to bottom button -->
+                <button id="scroll-bottom-btn" title="Scroll to bottom" class="hidden fixed right-6 bottom-24 z-40 bg-hacker-green/20 border border-hacker-green text-hacker-green px-3 py-2 rounded shadow hover:bg-hacker-green/30 transition-all duration-300">
+                    <i class="fa fa-arrow-down"></i>
+                </button>
+                <!-- Logout button (visible on mobile, also available on desktop) -->
+                <button id="logout-fab" title="Logout" class="hidden fixed left-6 bottom-24 z-40 bg-hacker-purple/20 border border-hacker-purple text-hacker-purple px-3 py-2 rounded shadow hover:bg-hacker-purple/30 transition-all duration-300">
+                    <i class="fa fa-sign-out"></i>
+                </button>
+                
+                <!-- Input area -->
+                <div class="border-t border-hacker-green/30 p-4">
+                    <div class="flex space-x-2">
+                        <input type="text" id="message-input" 
+                            class="flex-1 bg-hacker-gray border border-hacker-green/50 p-2 focus:border-hacker-green focus:outline-none focus:border-glow-green transition-all duration-300"
+                            placeholder="Type message...">
+                        <button id="send-btn" class="bg-hacker-green/20 border border-hacker-green text-hacker-green px-4 py-2 hover:bg-hacker-green/30 transition-all duration-300">
+                            <i class="fa fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- Footer info -->
+        <footer class="border-t border-hacker-green/30 p-2 text-xs text-center text-hacker-green/60">
+            <p>CyberChat v1.3.3.7 | Connection: <span id="connection-status" class="text-hacker-red">Disconnected</span></p>
+        </footer>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+        import { getDatabase, ref, push, serverTimestamp, onChildAdded, onValue, onDisconnect, set, remove, off, get } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js';
+
+        // Firebase configuration (provided by you)
+        const firebaseConfig = {
+            apiKey: "AIzaSyA5Z5ieEbAcfQX0kxGSn9ldGXhzvAwx_8M",
+            authDomain: "chat-294cc.firebaseapp.com",
+            databaseURL: "https://chat-294cc-default-rtdb.firebaseio.com",
+            projectId: "chat-294cc",
+            storageBucket: "chat-294cc.firebasestorage.app",
+            messagingSenderId: "913615304269",
+            appId: "1:913615304269:web:0274ffaccb8e6b678e4e04",
+            measurementId: "G-SJR9NDW86B"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Basic state
+        const state = {
+            currentUser: null,
+            currentRoom: 'main',
+            presenceRef: null,
+            messagesRef: null,
+            presenceUnsubscribe: null,
+            messagesUnsubscribe: null
+        };
+
+        // DOM elements
+        const elements = {
+            authModal: document.getElementById('auth-modal'),
+            usernameInput: document.getElementById('username'),
+            roomSelect: document.getElementById('room'),
+            enterBtn: document.getElementById('enter-btn'),
+            logoutBtn: document.getElementById('logout-btn'),
+            usernameDisplay: document.getElementById('username-display'),
+            messagesContainer: document.getElementById('messages-container'),
+            messageInput: document.getElementById('message-input'),
+            sendBtn: document.getElementById('send-btn'),
+            userList: document.getElementById('user-list'),
+            connectionStatus: document.getElementById('connection-status'),
+            scrollBottomBtn: document.getElementById('scroll-bottom-btn')
+        };
+        // Additional buttons (mobile logout)
+        elements.logoutFab = document.getElementById('logout-fab');
+
+        // Event binding
+        function setupEventListeners() {
+            elements.enterBtn.addEventListener('click', enterChat);
+            elements.sendBtn.addEventListener('click', sendMessage);
+            elements.messageInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendMessage();
+            });
+            elements.logoutBtn.addEventListener('click', logout);
+            elements.messagesContainer.addEventListener('scroll', handleScroll);
+            elements.scrollBottomBtn.addEventListener('click', scrollToBottom);
+            elements.logoutFab.addEventListener('click', logout);
+        }
+
+        // Connection status (Firebase built-in .info/connected)
+        function setupConnectionIndicator() {
+            const connectedRef = ref(db, '.info/connected');
+            onValue(connectedRef, (snap) => {
+                const isConnected = snap.val() === true;
+                if (isConnected) {
+                    elements.connectionStatus.textContent = 'Connected';
+                    elements.connectionStatus.className = 'text-hacker-green';
+                } else {
+                    elements.connectionStatus.textContent = 'Disconnected';
+                    elements.connectionStatus.className = 'text-red-500';
+                }
+            });
+        }
+
+        // Enter chat room
+        async function enterChat() {
+            const username = elements.usernameInput.value.trim();
+            const room = elements.roomSelect.value;
+            if (!username) {
+                showNotification('Please enter username', 'error');
+                return;
+            }
+
+            // Check if username is taken in the room
+            const taken = await isUsernameTaken(room, username);
+            if (taken) {
+                showNotification('Username is already taken, please choose another', 'error');
+                return;
+            }
+
+            state.currentUser = username;
+            state.currentRoom = room;
+
+            elements.authModal.classList.add('hidden');
+            elements.usernameDisplay.textContent = `B${username}`;
+
+            // Persist to local storage
+            localStorage.setItem('cyberchat_username', username);
+            localStorage.setItem('cyberchat_room', room);
+
+            joinRoom(room);
+            elements.messageInput.focus();
+
+            // Show floating logout button
+            elements.logoutFab.classList.remove('hidden');
+        }
+
+        // Join room: establish presence, subscribe to messages and online list
+        function joinRoom(roomId) {
+            cleanupRoomBindings();
+
+            // Clear message area and keep welcome message
+            resetMessagesContainer();
+
+            // Presence online status
+            state.presenceRef = ref(db, `rooms/${roomId}/presence/${state.currentUser}`);
+            set(state.presenceRef, true);
+            onDisconnect(state.presenceRef).remove();
+
+            // Online user list
+            const presenceListRef = ref(db, `rooms/${roomId}/presence`);
+            state.presenceUnsubscribe = onValue(presenceListRef, (snapshot) => {
+                const usersObj = snapshot.val() || {};
+                const users = Object.keys(usersObj);
+                renderUserList(users);
+            });
+
+            // Message listening (realtime)
+            state.messagesRef = ref(db, `rooms/${roomId}/messages`);
+            state.messagesUnsubscribe = onChildAdded(state.messagesRef, (snapshot) => {
+                const msg = snapshot.val();
+                if (!msg) return;
+                appendMessage({
+                    username: msg.username,
+                    text: msg.text,
+                    timestamp: msg.timestamp
+                });
+            });
+        }
+
+        // Clean up bindings when leaving or switching rooms
+        function cleanupRoomBindings() {
+            if (state.messagesRef && state.messagesUnsubscribe) {
+                off(state.messagesRef);
+            }
+            if (state.presenceRef) {
+                remove(state.presenceRef).catch(() => {});
+            }
+            if (state.presenceUnsubscribe) {
+                // onValue doesn't return a cancel function, use off to clean up references
+                off(ref(db, `rooms/${state.currentRoom}/presence`));
+            }
+            state.messagesRef = null;
+            state.presenceRef = null;
+            state.messagesUnsubscribe = null;
+            state.presenceUnsubscribe = null;
+        }
+
+        // Logout from chat room
+        function logout() {
+            cleanupRoomBindings();
+            state.currentUser = null;
+            state.currentRoom = 'main';
+
+            // Reset UI
+            elements.authModal.classList.remove('hidden');
+            elements.usernameInput.value = '';
+            elements.userList.innerHTML = '';
+            resetMessagesContainer();
+
+            // Clear local storage
+            localStorage.removeItem('cyberchat_username');
+            localStorage.removeItem('cyberchat_room');
+
+            // Hide floating logout button
+            elements.logoutFab.classList.add('hidden');
+        }
+
+        // Send message (write to Realtime Database)
+        function sendMessage() {
+            const text = elements.messageInput.value.trim();
+            if (!text || !state.currentUser || !state.currentRoom) return;
+
+            const msg = {
+                username: state.currentUser,
+                text,
+                timestamp: serverTimestamp()
+            };
+            const messagesRef = ref(db, `rooms/${state.currentRoom}/messages`);
+            push(messagesRef, msg).catch(() => {
+                showNotification('Send failed, please try again', 'error');
+            });
+
+            elements.messageInput.value = '';
+        }
+
+        // Render: user list
+        function renderUserList(users) {
+            elements.userList.innerHTML = '';
+            users.forEach((user) => {
+                const isCurrentUser = user === state.currentUser;
+                const li = document.createElement('li');
+                li.className = `flex items-center ${isCurrentUser ? 'text-hacker-purple text-shadow-purple' : ''}`;
+                li.innerHTML = `
+                    <i class="fa fa-circle text-xs mr-2 ${isCurrentUser ? 'text-hacker-purple' : 'text-hacker-green'}"></i>
+                    <span>B${user}</span>
+                `;
+                elements.userList.appendChild(li);
+            });
+        }
+
+        // Append a message to display area
+        function appendMessage(msg) {
+            const isCurrentUser = msg.username === state.currentUser;
+            const alignClass = isCurrentUser ? 'justify-end' : 'justify-start';
+            const bgClass = isCurrentUser ? 'bg-hacker-purple/20 border-hacker-purple' : 'bg-hacker-green/10 border-hacker-green/50';
+            const userColor = isCurrentUser ? 'text-hacker-purple text-shadow-purple' : 'text-hacker-green text-shadow-green';
+
+            const wasAtBottom = isNearBottom();
+            const msgElement = document.createElement('div');
+            msgElement.className = `flex ${alignClass}`;
+            msgElement.innerHTML = `
+                <div class="max-w-[80%] ${bgClass} border rounded p-2">
+                    <div class="flex items-center mb-1">
+                        <span class="${userColor} font-bold text-sm">B${msg.username}</span>
+                        <span class="text-hacker-green/50 text-xs ml-2">${formatTime(msg.timestamp)}</span>
+                    </div>
+                    <p class="text-sm">${escapeHtml(msg.text)}</p>
+                </div>
+            `;
+            elements.messagesContainer.appendChild(msgElement);
+            if (wasAtBottom) {
+                elements.messagesContainer.scrollTop = elements.messagesContainer.scrollHeight;
+                elements.scrollBottomBtn.classList.add('hidden');
+            } else {
+                elements.scrollBottomBtn.classList.remove('hidden');
+            }
+        }
+
+        // Reset message area and keep welcome message
+        function resetMessagesContainer() {
+            elements.messagesContainer.innerHTML = '';
+            const welcomeMsg = document.createElement('div');
+            welcomeMsg.className = 'system-message text-hacker-blue/80 text-sm italic';
+            welcomeMsg.innerHTML = '<i class="fa fa-info-circle mr-2"></i>Welcome to CyberChat, please follow chat room rules';
+            elements.messagesContainer.appendChild(welcomeMsg);
+            elements.scrollBottomBtn.classList.add('hidden');
+        }
+
+        // Notification
+        function showNotification(text, type = 'info') {
+            const notification = document.createElement('div');
+            const colorClass = type === 'error' ? 'text-red-500 border-red-500' : 'text-hacker-blue border-hacker-blue';
+            notification.className = `fixed top-4 right-4 bg-hacker-gray ${colorClass} border p-3 rounded-md z-50 animate-[fadein_0.5s,fadeout_0.5s_2.5s]`;
+            notification.innerHTML = `<i class="fa fa-${type === 'error' ? 'exclamation-circle' : 'info-circle'} mr-2"></i>${text}`;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+        }
+
+        // Time formatting (compatible with serverTimestamp returning milliseconds)
+        function formatTime(ts) {
+            try {
+                const date = typeof ts === 'number' ? new Date(ts) : new Date(ts || Date.now());
+                return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            } catch {
+                return '';
+            }
+        }
+
+        // Text escaping to prevent XSS
+        function escapeHtml(str) {
+            return String(str)
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#039;');
+        }
+
+        // Animation styles (keep original animations)
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes scan {
+                0% { transform: translateY(-100%); }
+                100% { transform: translateY(100%); }
+            }
+            @keyframes fadein {
+                from { opacity: 0; transform: translateX(20px); }
+                to { opacity: 1; transform: translateX(0); }
+            }
+            @keyframes fadeout {
+                from { opacity: 1; transform: translateX(0); }
+                to { opacity: 0; transform: translateX(20px); }
+            }
+            /* Custom scrollbar (WebKit) */
+            #messages-container::-webkit-scrollbar,
+            #user-list::-webkit-scrollbar {
+                width: 10px;
+            }
+            #messages-container::-webkit-scrollbar-track,
+            #user-list::-webkit-scrollbar-track {
+                background: rgba(0, 255, 65, 0.05);
+            }
+            #messages-container::-webkit-scrollbar-thumb,
+            #user-list::-webkit-scrollbar-thumb {
+                background: rgba(0, 255, 65, 0.35);
+                border: 2px solid rgba(0, 255, 65, 0.25);
+                border-radius: 8px;
+                box-shadow: 0 0 6px rgba(0, 255, 65, 0.5);
+            }
+            #messages-container::-webkit-scrollbar-thumb:hover,
+            #user-list::-webkit-scrollbar-thumb:hover {
+                background: rgba(0, 255, 65, 0.55);
+            }
+            /* Firefox */
+            #messages-container,
+            #user-list {
+                scrollbar-width: thin;
+                scrollbar-color: rgba(0, 255, 65, 0.55) rgba(0, 255, 65, 0.08);
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Initialize
+        window.addEventListener('DOMContentLoaded', () => {
+            setupEventListeners();
+            setupConnectionIndicator();
+            resetMessagesContainer();
+            // Auto-login (if saved locally)
+            const savedUser = localStorage.getItem('cyberchat_username');
+            const savedRoom = localStorage.getItem('cyberchat_room');
+            if (savedUser && savedRoom) {
+                (async () => {
+                    const taken = await isUsernameTaken(savedRoom, savedUser);
+                    if (taken) {
+                        // Already taken, clear and require re-login
+                        localStorage.removeItem('cyberchat_username');
+                        localStorage.removeItem('cyberchat_room');
+                        elements.authModal.classList.remove('hidden');
+                        showNotification('Previous username is already online, please login again', 'error');
+                        return;
+                    }
+                    // Auto-enter
+                    elements.usernameInput.value = savedUser;
+                    elements.roomSelect.value = savedRoom;
+                    state.currentUser = savedUser;
+                    state.currentRoom = savedRoom;
+                    elements.authModal.classList.add('hidden');
+                    elements.usernameDisplay.textContent = `B${savedUser}`;
+                    joinRoom(savedRoom);
+                    elements.logoutFab.classList.remove('hidden');
+                })();
+            }
+        });
+
+        // Check if username is taken in room
+        async function isUsernameTaken(roomId, username) {
+            try {
+                const snapshot = await get(ref(db, `rooms/${roomId}/presence/${username}`));
+                return snapshot.exists();
+            } catch {
+                return false;
+            }
+        }
+
+        // Scroll helpers
+        function isNearBottom(threshold = 80) {
+            const el = elements.messagesContainer;
+            return el.scrollHeight - el.scrollTop - el.clientHeight <= threshold;
+        }
+        function handleScroll() {
+            if (isNearBottom()) {
+                elements.scrollBottomBtn.classList.add('hidden');
+            } else {
+                elements.scrollBottomBtn.classList.remove('hidden');
+            }
+        }
+        function scrollToBottom() {
+            const el = elements.messagesContainer;
+            el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+            elements.scrollBottomBtn.classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
